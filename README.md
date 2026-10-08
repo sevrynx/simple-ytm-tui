@@ -2,6 +2,10 @@
 
 YouTube Music in the terminal with endless radio autoplay. No Google account needed.
 
+<p align="center">
+  <img src="screenshots/ui.png" alt="Simple YTM TUI: search results, Up next queue and now-playing bar" width="720">
+</p>
+
 Search uses the same logged-out API the music.youtube.com web app uses. Playback goes
 through headless `mpv`, with `yt-dlp` resolving the audio. mpv's playlist is the queue,
 so desktop media controls (via `mpv-mpris`) can pause and skip.
