@@ -1,0 +1,16 @@
+[package]
+name = "ytm-tui"
+version = "0.1.0"
+edition = "2021"
+description = "Terminal YouTube Music player with endless radio. No account needed."
+
+[[bin]]
+name = "ytm"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+libc = "0.2"
+ratatui = "0.29"
+serde_json = "1"
+ureq = { version = "2", features = ["json"] }
