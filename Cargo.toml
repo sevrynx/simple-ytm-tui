@@ -3,6 +3,7 @@ name = "ytm-tui"
 version = "0.1.0"
 edition = "2021"
 description = "Terminal YouTube Music player with endless radio. No account needed."
+license = "GPL-3.0-or-later"
 
 [[bin]]
 name = "ytm"

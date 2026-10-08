@@ -1,4 +1,4 @@
-# ytm
+# Simple YTM TUI
 
 YouTube Music in the terminal with endless radio autoplay. No Google account needed.
 
@@ -40,3 +40,7 @@ cargo install --path . --root ~/.local
 
 YouTube changes things often. Update yt-dlp first: `sudo pacman -Syu yt-dlp`.
 `ytm --selftest "some song"` checks search and radio without the UI.
+
+## License
+
+Copyright (C) 2026 Oneeb Zahid. Licensed under the GNU GPL v3 or later; see [LICENSE](LICENSE).
