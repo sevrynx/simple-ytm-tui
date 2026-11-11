@@ -11,6 +11,8 @@ use std::time::Duration;
 use anyhow::{bail, Context, Result};
 use serde_json::{json, Value};
 
+use crate::links::{self, LinkCache};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PlayerEvent {
     TimePos(Option<f64>),
@@ -28,6 +30,7 @@ pub struct Player {
     child: Child,
     sock: UnixStream,
     sock_path: PathBuf,
+    links: LinkCache,
 }
 
 impl Player {
@@ -35,10 +38,11 @@ impl Player {
     where
         T: From<PlayerEvent> + Send + 'static,
     {
-        let sock_path = socket_path();
+        let sock_path = runtime_path("sock");
         let _ = fs::remove_file(&sock_path);
+        let links = LinkCache::create(runtime_path("links"))?;
 
-        let mut child = spawn_mpv(&sock_path)?;
+        let mut child = spawn_mpv(&sock_path, links.dir())?;
         let Some(sock) = connect_with_retry(&sock_path) else {
             let _ = child.kill();
             let _ = child.wait();
@@ -52,6 +56,7 @@ impl Player {
             child,
             sock,
             sock_path,
+            links,
         };
         for (id, name) in OBSERVED.iter().enumerate() {
             player.observe(id + 1, name);
@@ -103,6 +108,14 @@ impl Player {
         self.command(json!(["add", "volume", delta]));
     }
 
+    pub fn prefetch(&self, id: &str) {
+        self.links.prefetch(id);
+    }
+
+    pub fn forget(&self, id: &str) {
+        self.links.forget(id);
+    }
+
     fn observe(&mut self, id: usize, property: &str) {
         self.command(json!(["observe_property", id, property]));
     }
@@ -127,23 +140,30 @@ impl Drop for Player {
     }
 }
 
-fn socket_path() -> PathBuf {
+fn runtime_path(suffix: &str) -> PathBuf {
     let dir = std::env::var_os("XDG_RUNTIME_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir);
-    dir.join(format!("ytm-tui-{}.sock", std::process::id()))
+    dir.join(format!("ytm-tui-{}.{suffix}", std::process::id()))
 }
 
-fn spawn_mpv(sock_path: &Path) -> Result<Child> {
+fn spawn_mpv(sock_path: &Path, links_dir: &Path) -> Result<Child> {
+    let exe = std::env::current_exe().context("could not find the ytm executable")?;
     let mut cmd = Command::new("mpv");
     cmd.args([
         "--idle=yes",
         "--no-video",
         "--no-terminal",
         "--force-window=no",
-        "--ytdl-format=bestaudio/best",
+        "--stream-lavf-o=reconnect=1,reconnect_on_http_error=403,reconnect_delay_max=60",
     ])
+    .arg(format!("--ytdl-format={}", links::AUDIO_FORMAT))
+    .arg(format!(
+        "--script-opts=ytdl_hook-ytdl_path={}:yt-dlp",
+        exe.display()
+    ))
     .arg(format!("--input-ipc-server={}", sock_path.display()))
+    .env(links::CACHE_ENV, links_dir)
     .stdin(Stdio::null())
     .stdout(Stdio::null())
     .stderr(Stdio::null());

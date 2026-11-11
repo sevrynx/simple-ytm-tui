@@ -18,8 +18,12 @@ pub struct Track {
 
 impl Track {
     pub fn url(&self) -> String {
-        format!("https://www.youtube.com/watch?v={}", self.id)
+        watch_url(&self.id)
     }
+}
+
+pub fn watch_url(id: &str) -> String {
+    format!("https://www.youtube.com/watch?v={id}")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

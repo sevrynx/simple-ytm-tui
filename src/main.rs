@@ -1,8 +1,10 @@
 mod api;
 mod app;
+mod links;
 mod player;
 mod ui;
 
+use std::path::Path;
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
@@ -15,6 +17,10 @@ use app::{App, Msg};
 use player::Player;
 
 fn main() -> Result<()> {
+    if let Some(dir) = std::env::var_os(links::CACHE_ENV) {
+        return links::run_as_ytdl(Path::new(&dir));
+    }
+
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("--selftest") => return selftest(&args[1..].join(" ")),

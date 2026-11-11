@@ -8,7 +8,8 @@ YouTube Music in the terminal with endless radio autoplay. No Google account nee
 
 Search uses the same logged-out API the music.youtube.com web app uses. Playback goes
 through headless `mpv`, with `yt-dlp` resolving the audio. mpv's playlist is the queue,
-so desktop media controls (via `mpv-mpris`) can pause and skip.
+so desktop media controls (via `mpv-mpris`) can pause and skip. While a song plays, ytm looks
+up the next one in the background, so YouTube's pre-roll ad wait runs out before you get there.
 
 ## Requirements
 

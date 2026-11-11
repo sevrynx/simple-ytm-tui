@@ -62,6 +62,7 @@ pub struct App {
     pub radio_busy: bool,
     radio_token: Option<String>,
     radio_gen: u64,
+    prefetched: Option<String>,
 
     pub status: String,
     status_shown: String,
@@ -95,6 +96,7 @@ impl App {
             radio_busy: false,
             radio_token: None,
             radio_gen: 0,
+            prefetched: None,
             status: String::new(),
             status_shown: String::new(),
             status_since: Instant::now(),
@@ -290,6 +292,7 @@ impl App {
         self.player.insert_at(at, &track.url());
         self.status = format!("Playing next: {}", track.title);
         self.queue.insert(at, track);
+        self.prefetch_next();
     }
 
     fn remove(&mut self, i: usize) {
@@ -311,6 +314,7 @@ impl App {
         if self.queue_state.selected().is_some_and(|s| s > last) {
             self.queue_state.select(Some(last));
         }
+        self.prefetch_next();
     }
 
     fn append(&mut self, tracks: Vec<Track>) -> usize {
@@ -323,7 +327,18 @@ impl App {
             self.queue.push(track);
             added += 1;
         }
+        self.prefetch_next();
         added
+    }
+
+    fn prefetch_next(&mut self) {
+        let Some(next) = self.pos.and_then(|p| self.queue.get(p + 1)) else {
+            return;
+        };
+        if self.prefetched.as_ref() != Some(&next.id) {
+            self.player.prefetch(&next.id);
+            self.prefetched = Some(next.id.clone());
+        }
     }
 
     fn start_search(&mut self, query: String) {
@@ -425,6 +440,9 @@ impl App {
             PlayerEvent::Volume(volume) => self.volume = volume,
             PlayerEvent::PlaylistPos(pos) => self.on_pos(pos),
             PlayerEvent::PlaybackError => {
+                if let Some(track) = self.current() {
+                    self.player.forget(&track.id);
+                }
                 self.status = "Couldn't play that one, skipping".into();
             }
             PlayerEvent::Exited => {
@@ -456,6 +474,7 @@ impl App {
                 self.queue_state.select(Some(p));
             }
         }
+        self.prefetch_next();
         self.maybe_extend_radio();
     }
 }
